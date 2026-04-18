@@ -934,16 +934,30 @@ class ReportController extends Controller
         $fileName = 'case_collection_' . $batchId . '.zip';
         $tempFile = tempnam(sys_get_temp_dir(), 'zip');
 
+        $filesAdded = 0;
         if ($zip->open($tempFile, \ZipArchive::CREATE | \ZipArchive::OVERWRITE)) {
             foreach ($reports as $report) {
                 if ($report->file_path && Storage::disk('public')->exists($report->file_path)) {
                     $fullPath = Storage::disk('public')->path($report->file_path);
                     $zip->addFile($fullPath, $report->original_name);
+                    $filesAdded++;
                 }
             }
             $zip->close();
         } else {
             return back()->with('error', 'Could not create zip file');
+        }
+
+        // Verify we actually have files and the zip exists
+        if ($filesAdded === 0) {
+            if (file_exists($tempFile)) {
+                @unlink($tempFile);
+            }
+            return back()->with('error', 'No valid files found in this case to download.');
+        }
+
+        if (!file_exists($tempFile)) {
+            return back()->with('error', 'The archive file could not be generated.');
         }
 
         return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
