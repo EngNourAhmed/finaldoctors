@@ -1,0 +1,825 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="./images/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <title>BoneHard</title>
+    <script type="module" src="./js/index-BJvIxUBo.js"></script>
+    <link rel="stylesheet" href="./css/index-CBthoQ9D.css" />
+
+    <style>
+        .bh-auth-menu {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .bh-auth-menu-footer {
+            margin-top: 1.5rem;
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            padding-top: 0.5rem;
+        }
+
+        .bh-auth-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            background: rgba(0, 0, 0, 0.78);
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            transition:
+                background-color 150ms ease,
+                color 150ms ease,
+                border-color 150ms ease,
+                box-shadow 150ms ease,
+                transform 150ms ease;
+        }
+
+        .bh-auth-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.65);
+            transform: translateY(-1px);
+            color: #ffffff;
+        }
+
+        .bh-auth-btn--primary {
+            background: rgba(255, 255, 255, 0.92);
+            border-color: rgba(255, 255, 255, 0.92);
+            color: #000000;
+            box-shadow: 0 18px 55px rgba(0, 0, 0, 0.6);
+        }
+
+        .bh-auth-btn--primary:hover {
+            background: #ffffff;
+            border-color: #ffffff;
+            color: #000000;
+            box-shadow: 0 22px 65px rgba(0, 0, 0, 0.7);
+        }
+
+        @media (max-width: 640px) {
+            .bh-auth-btn {
+                padding-inline: 0.75rem;
+            }
+        }
+
+        .bh-auth-upload-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bh-auth-profile-link {
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(148, 163, 184, 0.6);
+            background: rgba(15, 23, 42, 0.86);
+        }
+
+        .bh-auth-profile-link img {
+            width: 2.25rem;
+            height: 2.25rem;
+            border-radius: 9999px;
+            display: block;
+        }
+
+        /* Spinner Styles */
+        .bh-spinner {
+            display: inline-block;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: bh-spin 1s ease-in-out infinite;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+
+        .bh-auth-btn--primary .bh-spinner {
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            border-top-color: #000;
+        }
+
+        @keyframes bh-spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .bh-auth-btn.loading {
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        /* Global Loading Overlay */
+        #bh-global-loading {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            background: rgba(6, 6, 6, 0.7);
+            backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        #bh-global-loading.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .bh-loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            animation: bh-loading-spin 0.8s linear infinite;
+        }
+
+        @keyframes bh-loading-spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+    <script>
+        (function () {
+            const AUTH_STATUS_URL = '/auth/status?_t=' + Date.now();
+            const AUTH_CACHE_KEY = 'bh_auth_status';
+
+            function getDashboardButtonText(role) {
+                if (role === 'admin' || role === 'admin_assistant') return 'Go to Admin Dashboard';
+                if (role === 'assistant') return 'Go to Assistant Dashboard';
+                return 'Go to Dashboard';
+            }
+
+            async function fetchAuthStatus() {
+                // Try to load from cache first for immediate rendering
+                const cached = localStorage.getItem(AUTH_CACHE_KEY);
+                if (cached) {
+                    try {
+                        const data = JSON.parse(cached);
+                        // If cached data is recent, we can return it, but we still want to refresh in background
+                        setTimeout(() => refreshAuthStatus(), 100);
+                        return data;
+                    } catch (e) {
+                        localStorage.removeItem(AUTH_CACHE_KEY);
+                    }
+                }
+
+                return await refreshAuthStatus();
+            }
+
+            async function refreshAuthStatus() {
+                try {
+                    const res = await fetch(AUTH_STATUS_URL, {
+                        credentials: 'include',
+                    });
+
+                    if (!res.ok) {
+                        localStorage.removeItem(AUTH_CACHE_KEY);
+                        return null;
+                    }
+                    const data = await res.json();
+
+                    const oldDataStr = localStorage.getItem(AUTH_CACHE_KEY);
+                    localStorage.setItem(AUTH_CACHE_KEY, JSON.stringify(data));
+
+                    // If data changed, re-render
+                    if (oldDataStr !== JSON.stringify(data)) {
+                        if (typeof window.__bhScheduleSync === 'function') {
+                            window.__bhScheduleSync();
+                        }
+                    }
+
+                    return data;
+                } catch (e) {
+                    return null;
+                }
+            }
+
+            function isUploadCasePage() {
+                var path = (window.location.pathname || '').toLowerCase();
+
+                if (path === '/contact') return true;
+                if (path === '/upload-your-case') return true;
+                if (path === '/upload') return true;
+
+                return false;
+            }
+
+            function hideUploadCaseForms() {
+                if (!isUploadCasePage()) return;
+
+                var root = document.getElementById('root');
+                if (!root) return;
+
+                // إخفاء محتوى صفحة Upload Your Case الأصلية بالكامل
+                root.style.display = 'none';
+            }
+
+            function removeUploadCaseLinks() {
+                const targets = new Set(['/contact', '/upload-your-case', '/upload']);
+                const textNeedles = ['upload your case'];
+
+                const links = document.querySelectorAll('a[href]');
+                links.forEach((link) => {
+                    const rawHref = link.getAttribute('href');
+                    if (!rawHref) return;
+
+                    let pathname = '';
+                    try {
+                        pathname = new URL(rawHref, window.location.origin).pathname;
+                    } catch (e) {
+                        pathname = rawHref;
+                    }
+
+                    if (!pathname) return;
+
+                    const normalized = pathname.toLowerCase();
+                    if (!targets.has(normalized)) return;
+
+                    const li = link.closest('li');
+                    if (li) {
+                        li.remove();
+                        return;
+                    }
+
+                    link.remove();
+                });
+
+                const candidates = document.querySelectorAll('a, button, [role="menuitem"], li');
+                candidates.forEach((el) => {
+                    const text = (el.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+                    if (!text) return;
+                    const matches = textNeedles.some((needle) => text.includes(needle));
+                    if (!matches) return;
+
+                    const li = el.closest('li');
+                    if (li) {
+                        li.remove();
+                        return;
+                    }
+
+                    el.remove();
+                });
+            }
+
+            function observeUploadCaseLinks() {
+                if (window.__bhUploadCaseObserver) return;
+
+                const observer = new MutationObserver(() => {
+                    removeUploadCaseLinks();
+                });
+
+                observer.observe(document.documentElement, {
+                    childList: true,
+                    subtree: true,
+                });
+
+                window.__bhUploadCaseObserver = observer;
+            }
+
+            function updateFooterPages(user) {
+                if (!user || !user.id) return;
+                const footerEl = document.querySelector('footer');
+                if (!footerEl) return;
+
+                const links = footerEl.querySelectorAll('a[href]');
+                links.forEach((link) => {
+                    const rawHref = link.getAttribute('href');
+                    if (!rawHref) return;
+
+                    // نهتم فقط بروابط الصفحات الرئيسية في الفوتر
+                    if (rawHref === '/' || rawHref === '/about' || rawHref === '/contact') {
+                        try {
+                            const url = new URL(rawHref, window.location.origin);
+                            url.searchParams.set('user_id', String(user.id));
+                            link.setAttribute('href', url.pathname + url.search);
+                        } catch (e) {
+                            // نتجاهل أي خطأ بسيط في بناء الـ URL
+                        }
+                    }
+                });
+            }
+
+            function findOpenMenuContainer() {
+                // Find all links
+                const allLinks = Array.from(document.querySelectorAll('a'));
+
+                // Find the 'Home' link which is always present in the mobile menu
+                const homeLink = allLinks.find(el => {
+                    const text = normalizeText(el.innerText || '');
+                    return text === 'home' || text.includes('home');
+                });
+
+                if (homeLink) {
+                    // Look for the closest container that is likely the menu
+                    // Usually it's a fixed or absolute panel
+                    const menu = homeLink.closest('nav, aside, [role="dialog"], [role="menu"], div[class*="fixed"], div[class*="absolute"]');
+                    if (menu && menu !== document.body) return menu;
+                }
+
+                // Fallback heuristic if Home link is not found
+                const selectors = [
+                    'nav', '[role="dialog"]', '[role="menu"]',
+                    '[data-headlessui-state="open"]', 'div.fixed.inset-0',
+                    'aside'
+                ];
+
+                const candidates = Array.from(document.querySelectorAll(selectors.join(',')))
+                    .filter(el => {
+                        if (el === document.body || el === document.documentElement) return false;
+                        const style = window.getComputedStyle(el);
+                        return style.display !== 'none';
+                    });
+
+                for (const el of candidates) {
+                    const text = normalizeText(el.innerText || el.textContent);
+                    if (text.includes('services') || text.includes('about')) {
+                        return el;
+                    }
+                }
+
+                return null;
+            }
+
+            function getOrCreateAuthFooter() {
+                // في صفحة Upload Your Case: نعرض الأزرار في منتصف الصفحة فقط
+                if (isUploadCasePage()) {
+                    var footer = document.querySelector('.bh-auth-menu-footer');
+                    if (footer) return footer;
+
+                    var container = document.querySelector('.bh-auth-upload-container');
+                    if (!container) {
+                        container = document.createElement('div');
+                        container.className = 'bh-auth-upload-container bh-auth-menu';
+                        document.body.appendChild(container);
+                    }
+
+                    footer = document.createElement('div');
+                    footer.className = 'bh-auth-menu-footer';
+                    container.appendChild(footer);
+
+                    return footer;
+                }
+
+                var menuContainer = findOpenMenuContainer();
+                if (!menuContainer) {
+                    // Fallback: If we can't find the menu, but we found an existing footer elsewhere, reuse it
+                    return document.querySelector('.bh-auth-menu-footer');
+                }
+
+                // Always look INSIDE the current open menu container
+                var footer = menuContainer.querySelector('.bh-auth-menu-footer');
+                if (footer) return footer;
+
+                footer = document.createElement('div');
+                footer.className = 'bh-auth-menu-footer';
+                menuContainer.appendChild(footer);
+
+                return footer;
+            }
+
+            function showGlobalLoading() {
+                var loader = document.getElementById('bh-global-loading');
+                if (loader) loader.classList.add('show');
+            }
+
+            function handleDashboardClick(e, url) {
+                if (e) {
+                    if (e.stopPropagation) e.stopPropagation();
+                }
+
+                const btn = e.currentTarget;
+                if (btn.classList.contains('loading')) return;
+
+                btn.classList.add('loading');
+                btn.innerHTML = '<span class="bh-spinner"></span> Loading...';
+
+                // Removed showGlobalLoading() as per user request to avoid screen freeze
+
+                console.log("BH NAV: Navigating to " + url);
+                window.location.href = url;
+
+                setTimeout(() => {
+                    window.location.assign(url);
+                }, 500);
+            }
+
+            function renderDashboardButton(data) {
+                const footer = getOrCreateAuthFooter();
+                if (!footer) return false;
+
+                if (!data || !data.authenticated || !data.redirect_url || !data.user) {
+                    return true;
+                }
+
+                // Avoid clearing if button already exists and has correct state
+                const existing = footer.querySelector('a.bh-auth-btn--primary');
+                if (existing) {
+                    if (existing.classList.contains('loading')) return true; // Don't interrupt loading
+                    existing.href = data.redirect_url;
+                    existing.textContent = getDashboardButtonText(data.user.role);
+                    return true;
+                }
+
+                footer.innerHTML = '';
+
+                const button = document.createElement('a');
+                button.href = data.redirect_url;
+                button.className = 'bh-auth-btn bh-auth-btn--primary';
+                button.textContent = getDashboardButtonText(data.user.role);
+
+                button.addEventListener('click', function (e) {
+                    handleDashboardClick(e, data.redirect_url);
+                });
+
+                footer.appendChild(button);
+
+                // تحديث روابط أقسام الفوتر بالـ user_id
+                updateFooterPages(data.user);
+
+                return true;
+            }
+
+            function renderGuestMenuAuthButtons() {
+                if (isUploadCasePage()) return true;
+
+                const footer = getOrCreateAuthFooter();
+                if (!footer) return false;
+
+                footer.innerHTML = '';
+
+                const loginBtn = document.createElement('a');
+                loginBtn.href = '/login';
+                loginBtn.className = 'bh-auth-btn';
+                loginBtn.textContent = 'Login';
+
+                const registerBtn = document.createElement('a');
+                registerBtn.href = '/register';
+                registerBtn.className = 'bh-auth-btn bh-auth-btn--primary';
+                registerBtn.textContent = 'Sign up';
+
+                footer.appendChild(loginBtn);
+                footer.appendChild(registerBtn);
+
+                return true;
+            }
+
+            function normalizeText(value) {
+                return (value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+            }
+
+            function findMenuAuthButtons() {
+                const candidates = document.querySelectorAll(
+                    'a, button, [role="button"], [role="menuitem"], div'
+                );
+
+                const results = {
+                    login: [],
+                    signup: [],
+                };
+
+                candidates.forEach((el) => {
+                    if (!el) return;
+                    const text = normalizeText(el.textContent);
+                    if (!text) return;
+
+                    if (text === 'login' || text === 'log in') {
+                        results.login.push(el);
+                        return;
+                    }
+
+                    if (text === 'sign up' || text === 'signup' || text === 'create account') {
+                        results.signup.push(el);
+                        return;
+                    }
+                });
+
+                return results;
+            }
+
+            function findAuthLinksByHref() {
+                return {
+                    login: Array.from(
+                        document.querySelectorAll('a[href="/login"], a[href^="/login?"]')
+                    ),
+                    signup: Array.from(
+                        document.querySelectorAll('a[href="/register"], a[href^="/register?"]')
+                    ),
+                };
+            }
+
+            function applyMonochromeButtonStyle(el, primary) {
+                if (!el || !el.classList) return;
+                el.classList.add('bh-auth-btn');
+                if (primary) el.classList.add('bh-auth-btn--primary');
+                else el.classList.remove('bh-auth-btn--primary');
+            }
+
+            function syncMenuAuthButtons(data) {
+                const byText = findMenuAuthButtons();
+                const byHref = findAuthLinksByHref();
+
+                const login = [...(byText.login || []), ...(byHref.login || [])];
+                const signup = [...(byText.signup || []), ...(byHref.signup || [])];
+                const loginEl = (login && login[0]) || null;
+                const signupEl = (signup && signup[0]) || null;
+
+                const existingDash = document.querySelector('a.bh-auth-btn[data-bh-dashboard="1"]');
+
+                if (data && data.authenticated && data.redirect_url) {
+                    // Put dashboard button inside the menu and remove login/signup when authenticated.
+                    (login || []).forEach((el) => {
+                        try {
+                            el.remove();
+                        } catch (e) { }
+                    });
+                    (signup || []).forEach((el) => {
+                        try {
+                            el.remove();
+                        } catch (e) { }
+                    });
+
+                    const anchor = signupEl || loginEl;
+                    if (!anchor) {
+                        if (existingDash) {
+                            existingDash.href = data.redirect_url;
+                            existingDash.textContent = getDashboardButtonText(data.user && data.user.role);
+                        }
+                        return;
+                    }
+
+                    const container = anchor.parentElement || anchor.closest('div') || anchor;
+                    if (!container) return;
+
+                    if (container.querySelector('a.bh-auth-btn[data-bh-dashboard="1"]')) {
+                        const btn = container.querySelector('a.bh-auth-btn[data-bh-dashboard="1"]');
+                        btn.href = data.redirect_url;
+                        btn.textContent = getDashboardButtonText(data.user && data.user.role);
+
+                        // Ensure listener is attached (remove first to avoid duplicates)
+                        btn.removeEventListener('click', btn.__bhListener);
+                        btn.__bhListener = function (e) { handleDashboardClick(e, data.redirect_url); };
+                        btn.addEventListener('click', btn.__bhListener);
+                        return;
+                    }
+
+                    if (existingDash) {
+                        try {
+                            existingDash.remove();
+                        } catch (e) { }
+                    }
+
+                    const dashBtn = document.createElement('a');
+                    dashBtn.href = data.redirect_url;
+                    dashBtn.textContent = getDashboardButtonText(data.user && data.user.role);
+                    dashBtn.setAttribute('data-bh-dashboard', '1');
+                    applyMonochromeButtonStyle(dashBtn, true);
+
+                    dashBtn.__bhListener = function (e) { handleDashboardClick(e, data.redirect_url); };
+                    dashBtn.addEventListener('click', dashBtn.__bhListener);
+
+                    container.appendChild(dashBtn);
+
+                    return;
+                }
+
+                if (existingDash) {
+                    try {
+                        existingDash.remove();
+                    } catch (e) { }
+                }
+
+                (login || []).forEach((el) => applyMonochromeButtonStyle(el, false));
+                (signup || []).forEach((el) => applyMonochromeButtonStyle(el, true));
+            }
+
+            function syncNavbarAuthLinks(data) {
+                const loginLinks = document.querySelectorAll('a[href="/login"], a[href^="/login?"]');
+                const registerLinks = document.querySelectorAll('a[href="/register"], a[href^="/register?"]');
+
+                const existingDash = document.querySelector('a.bh-auth-btn[data-bh-navbar-dashboard="1"]');
+
+                function getMainNavbarContainer(fallbackAnchor) {
+                    return (
+                        document.querySelector('header') ||
+                        document.querySelector('nav') ||
+                        (fallbackAnchor
+                            ? fallbackAnchor.closest('header') || fallbackAnchor.closest('nav')
+                            : null) ||
+                        (fallbackAnchor ? fallbackAnchor.parentElement || fallbackAnchor.closest('div') : null) ||
+                        document.body
+                    );
+                }
+
+                if (data && data.authenticated && data.redirect_url) {
+                    // In navbar: only remove auth links. Dashboard button is shown in the menu.
+
+                    // Remove auth links everywhere
+                    loginLinks.forEach((el) => {
+                        try {
+                            el.remove();
+                        } catch (e) { }
+                    });
+                    registerLinks.forEach((el) => {
+                        try {
+                            el.remove();
+                        } catch (e) { }
+                    });
+
+                    const allDash = Array.from(document.querySelectorAll('a.bh-auth-btn[data-bh-navbar-dashboard="1"]'));
+                    allDash.forEach((el) => {
+                        try {
+                            el.remove();
+                        } catch (e) { }
+                    });
+
+                    return;
+                }
+
+                if (existingDash) {
+                    try {
+                        existingDash.remove();
+                    } catch (e) { }
+                }
+
+                loginLinks.forEach((el) => applyMonochromeButtonStyle(el, false));
+                registerLinks.forEach((el) => applyMonochromeButtonStyle(el, true));
+            }
+
+            function renderGuestUploadFooter() {
+                if (!isUploadCasePage()) return true;
+
+                const footer = getOrCreateAuthFooter();
+                if (!footer) return false;
+
+                footer.innerHTML = '';
+
+                const loginBtn = document.createElement('a');
+                loginBtn.href = '/login';
+                loginBtn.className = 'bh-auth-btn';
+                loginBtn.textContent = 'Login';
+
+                const registerBtn = document.createElement('a');
+                registerBtn.href = '/register';
+                registerBtn.className = 'bh-auth-btn bh-auth-btn--primary';
+                registerBtn.textContent = 'Create account';
+
+                footer.appendChild(loginBtn);
+                footer.appendChild(registerBtn);
+
+                return true;
+            }
+
+            async function initAuthUi() {
+                const data = await fetchAuthStatus();
+                let lastData = data;
+
+                if (data && data.authenticated) {
+                    document.body.classList.add('bh-is-authenticated');
+                } else {
+                    document.body.classList.remove('bh-is-authenticated');
+                }
+
+                observeUploadCaseLinks();
+
+                // Re-run replacements when the menu/navbar re-renders dynamically
+                let syncScheduled = false;
+                function scheduleSync() {
+                    if (syncScheduled) return;
+                    syncScheduled = true;
+                    setTimeout(() => {
+                        syncScheduled = false;
+                        if (lastData && lastData.authenticated) {
+                            renderDashboardButton(lastData);
+                        }
+                        syncMenuAuthButtons(lastData);
+                        syncNavbarAuthLinks(lastData);
+                    }, 50);
+
+                    // Extra safety: retry after a bit for animations
+                    setTimeout(() => {
+                        if (lastData && lastData.authenticated) {
+                            renderDashboardButton(lastData);
+                        }
+                        syncMenuAuthButtons(lastData);
+                    }, 400);
+                }
+
+                window.__bhScheduleSync = scheduleSync;
+
+                try {
+                    const observer = new MutationObserver(() => scheduleSync());
+                    observer.observe(document.documentElement, {
+                        childList: true,
+                        subtree: true,
+                        attributes: true,
+                        attributeFilter: ['class', 'style', 'data-headlessui-state', 'aria-hidden']
+                    });
+                } catch (e) { }
+
+                let attempts = 0;
+                const maxAttempts = 20;
+
+                function tryRender() {
+                    attempts += 1;
+                    let done = false;
+
+                    if (data && data.authenticated) {
+                        done = renderDashboardButton(data);
+                    } else {
+                        done = renderGuestMenuAuthButtons();
+                        if (!done) {
+                            done = renderGuestUploadFooter();
+                        }
+                    }
+
+                    // إخفاء حقول إدخال الفورم الأصلية في صفحة Upload Your Case
+                    hideUploadCaseForms();
+
+                    removeUploadCaseLinks();
+
+                    syncMenuAuthButtons(data);
+
+                    syncNavbarAuthLinks(data);
+
+                    scheduleSync();
+
+                    if (!done && attempts < maxAttempts) {
+                        setTimeout(tryRender, 250);
+                    }
+                }
+
+                // Add global click listener for all links to show loading state
+                document.addEventListener('click', function (e) {
+                    const link = e.target.closest('a');
+                    if (!link) return;
+
+                    const href = link.getAttribute('href');
+                    if (!href || href === '#' || href.startsWith('javascript:') || link.target === '_blank') return;
+
+                    const isInternal = href.startsWith('/') || href.startsWith(window.location.origin) || !href.includes('://');
+                    if (isInternal) {
+                        const text = normalizeText(link.textContent || '');
+                        const isAuth = text === 'login' || text === 'log in' || text === 'sign up' || text === 'signup' || text === 'create account';
+
+                        // If it's an auth button or dashboard, show its own spinner instead of global overlay
+                        if (isAuth || link.hasAttribute('data-bh-dashboard')) {
+                            if (link.classList.contains('loading')) return;
+                            link.classList.add('loading');
+                            const originalText = link.textContent;
+                            link.innerHTML = '<span class="bh-spinner"></span> ' + originalText;
+                        } else {
+                            // Only show global loading for other internal content links if really needed, 
+                            // but user asked to "الغى التحميل اللى بيحصل للشاشة نفسها" (disable screen loading)
+                            // So we disable it everywhere to be safe.
+                            // showGlobalLoading(); 
+                        }
+                    }
+                }, true);
+
+                tryRender();
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initAuthUi);
+            } else {
+                initAuthUi();
+            }
+        })();
+    </script>
+</head>
+
+<body>
+    <div id="bh-global-loading">
+        <div class="flex flex-col items-center gap-4">
+            <div class="bh-loading-spinner"></div>
+            <p class="text-white/60 text-sm font-medium tracking-widest uppercase">Loading</p>
+        </div>
+    </div>
+    <div id="root"></div>
+</body>
+
+</html>

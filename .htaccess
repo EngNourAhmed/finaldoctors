@@ -1,0 +1,20 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # 1) افتح الصفحة الرئيسية كـ static index.html داخل doctor_dash/public
+    RewriteRule ^$ doctor_dash/public/index.html [L]
+
+    # (اختياري) لو عندك صفحات SPA زي /about وعايزها تفتح نفس index.html
+    RewriteRule ^about/?$ doctor_dash/public/index.html [L]
+
+    # 2) خليك محافظ على /storage يروح للباك اند
+    RewriteRule ^storage/(.*)$ doctor_dash/public/storage/$1 [L]
+
+    # 3) لو الملف/المجلد موجود في public_html نفسه، سيبه (مثلاً ملفات SSL verify)
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # 4) أي مسارات ثانية (زي /login /register /auth/status ...) حولها للـLaravel public
+    RewriteRule ^(.*)$ doctor_dash/public/$1 [L]
+</IfModule>

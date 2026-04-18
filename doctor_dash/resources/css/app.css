@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+    .btn {
+        @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200 border shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+    }
+
+    .btn-white {
+        @apply bg-[#f5f5f5] text-[#060606] hover:bg-white border-[#f5f5f5] hover:border-white;
+    }
+
+    .btn-black {
+        @apply bg-[#0c0c0c] text-white hover:bg-[#111] border-[#222] hover:border-[#333];
+    }
+
+    .btn-yellow {
+        /* Matches the clear yellow requirement */
+        @apply bg-[#FACC15] text-[#060606] hover:bg-[#FDE047] border-[#FACC15] hover:border-[#FDE047];
+    }
+
+    .btn-sm {
+        @apply px-3 py-1.5 text-xs;
+    }
+
+    .btn-lg {
+        @apply px-6 py-3 text-base;
+    }
+
+    /* Tab Navigation Styles */
+    .tab-button {
+        @apply relative;
+    }
+
+    .tab-button.active {
+        @apply text-[#FACC15] border-[#FACC15];
+    }
+
+    .tab-content {
+        @apply transition-opacity duration-200;
+    }
+
+    /* Chat message styles */
+    .message {
+        @apply p-4 rounded-xl bg-[#0c0c0c] border border-white/5 max-w-[80%];
+    }
+
+    .message-sender {
+        @apply text-xs font-bold text-[#FACC15] mb-2;
+    }
+
+    .message-body {
+        @apply text-sm text-white mb-2 whitespace-pre-wrap break-words leading-relaxed;
+    }
+
+    .message-body a {
+        @apply text-[#FACC15] hover:underline;
+    }
+
+    .message-time {
+        @apply text-xs text-gray-500;
+    }
+}
+
+/* Custom scrollbar styles for chat - outside @layer */
+#case-chat-messages {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(250, 204, 21, 0.3) transparent;
+}
+
+#case-chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+#case-chat-messages::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#case-chat-messages::-webkit-scrollbar-thumb {
+    background-color: rgba(250, 204, 21, 0.3);
+    border-radius: 3px;
+}
+
+#case-chat-messages::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(250, 204, 21, 0.5);
+}
