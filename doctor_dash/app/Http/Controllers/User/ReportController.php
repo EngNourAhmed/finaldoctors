@@ -911,9 +911,17 @@ class ReportController extends Controller
     {
         $user = $request->user();
         
-        $reports = Report::where('user_id', $user->id)
+        // Check if user owns at least one report in this batch
+        $ownsBatch = Report::where('user_id', $user->id)
             ->where('batch_id', $batchId)
-            ->get();
+            ->exists();
+
+        if (!$ownsBatch) {
+            abort(403, 'You do not have permission to download this case collection.');
+        }
+
+        // Fetch ALL reports in this batch (including admin replies)
+        $reports = Report::where('batch_id', $batchId)->get();
 
         if ($reports->isEmpty()) {
             abort(404);
