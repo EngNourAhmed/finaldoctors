@@ -42,7 +42,7 @@ class DailyAnalyticsSent extends Notification
             'message' => 'The daily analytics report for ' . $this->date . ' has been sent to info@bone-hard.com',
             'type' => 'analytics',
             'icon' => 'fas fa-chart-line',
-            'link' => route('admin.analytics'),
+            'link' => route('admin.analytics.index'),
         ];
     }
 }

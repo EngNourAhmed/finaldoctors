@@ -30,23 +30,29 @@ class SendDailyAnalytics extends Command
     public function handle(AnalyticsService $service)
     {
         $this->info('Starting daily analytics report generation...');
+        set_time_limit(0);
 
         try {
             $stats = $service->getAnalyticsData();
             $date = now()->format('Y-m-d');
+            $recipient = env('ANALYTICS_REPORT_EMAIL', 'info@bone-hard.com');
 
             // Generate PDF content
             $pdfContent = Pdf::loadView('pdfs.analytics_report', compact('stats'))->output();
 
             // Send Email
-            Mail::to('info@bone-hard.com')->send(new DailyAnalyticsMail($pdfContent, $date));
+            Mail::to($recipient)->send(new DailyAnalyticsMail($pdfContent, $date));
 
             // Notify Admin Users in Dashboard
             $admins = \App\Models\User::whereIn('role', ['admin', 'assistant', 'admin_assistant'])->get();
             \Illuminate\Support\Facades\Notification::send($admins, new \App\Notifications\DailyAnalyticsSent($date));
 
-            $this->info('Daily analytics report sent successfully to info@bone-hard.com');
+            $this->info("Daily analytics report sent successfully to {$recipient}");
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to send daily analytics: ' . $e->getMessage(), [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString()
+            ]);
             $this->error('Failed to send daily analytics: ' . $e->getMessage());
             return 1;
         }
