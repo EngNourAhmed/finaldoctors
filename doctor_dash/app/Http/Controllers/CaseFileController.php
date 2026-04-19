@@ -92,11 +92,20 @@ class CaseFileController extends Controller
         ]);
 
         // Authorization: Admin can rename any. User can only rename files in their OWN cases.
-        if (auth()->user()->role !== 'admin' && $report->user_id !== auth()->id()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized action. You can only rename files in your own cases.'
-            ], 403);
+        // BUT Users cannot rename files in the 'doctor_public' (Admin Public) folder.
+        if (auth()->user()->role !== 'admin') {
+            if ($report->user_id !== auth()->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized action. You can only rename files in your own cases.'
+                ], 403);
+            }
+            if ($report->folder_type === 'doctor_public') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized action. Files in the Admin Public folder cannot be renamed by users.'
+                ], 403);
+            }
         }
 
         // Smart Rename: keep extension if not provided
@@ -132,8 +141,14 @@ class CaseFileController extends Controller
     public function destroy(Report $report)
     {
         // Authorization: Admin can delete any. User can only delete files from THEIR OWN cases.
-        if (auth()->user()->role !== 'admin' && $report->user_id !== auth()->id()) {
-            abort(403, 'Unauthorized action. You can only remove files from your own cases.');
+        // BUT Users cannot delete files in the 'doctor_public' (Admin Public) folder.
+        if (auth()->user()->role !== 'admin') {
+            if ($report->user_id !== auth()->id()) {
+                abort(403, 'Unauthorized action. You can only remove files from your own cases.');
+            }
+            if ($report->folder_type === 'doctor_public') {
+                abort(403, 'Unauthorized action. Files in the Admin Public folder cannot be removed by users.');
+            }
         }
 
         $batch_id = $report->batch_id;

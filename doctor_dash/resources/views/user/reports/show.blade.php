@@ -281,7 +281,8 @@
                                                 </a>
                                             </div>
                                             <div class="flex items-center gap-2">
-                                                @if(auth()->user()->role === 'admin' || $report->user_id === auth()->id())
+                                                {{-- Allow rename if admin OR if owner AND not in admin_public --}}
+                                                @if(auth()->user()->role === 'admin' || ($report->user_id === auth()->id() && $report->folder_type !== 'doctor_public'))
                                                 <button type="button" 
                                                     class="rename-file-btn flex-1 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[11px] font-bold text-[#FACC15] hover:bg-[#FACC15]/10 transition-colors flex items-center justify-center gap-1.5"
                                                     data-report-id="{{ $report->id }}"
@@ -295,7 +296,8 @@
                                                     data-report-id="{{ $report->id }}">
                                                     Link
                                                 </button>
-                                                @if(auth()->user()->role === 'admin' || $report->user_id === auth()->id())
+                                                {{-- Allow delete if admin OR if owner AND not in admin_public --}}
+                                                @if(auth()->user()->role === 'admin' || ($report->user_id === auth()->id() && $report->folder_type !== 'doctor_public'))
                                                     <form action="{{ route('case.files.destroy', $report) }}" method="POST" onsubmit="return confirm('Are you sure you want to remove this file?')" class="m-0">
                                                         @csrf
                                                         @method('DELETE')
