@@ -256,7 +256,7 @@
                                                     Uploaded: {{ $report->created_at->format('Y-m-d h:i A') }}
                                                 </p>
                                                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                                                    {{ optional($report->updatedBy)->name }}
+                                                    {{ ($type === 'case_folder') ? ($report->user->name ?? 'USER') : (optional($report->updatedBy)->name ?? 'ADMIN') }}
                                                 </span>
                                             </div>
                                         </div>
