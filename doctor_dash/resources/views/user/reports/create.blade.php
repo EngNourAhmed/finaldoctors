@@ -592,7 +592,7 @@ input[type="radio"], input[type="checkbox"] {
                     </div>
                     <div class="flex items-center gap-3">
                         <span id="prog-${fileId}" class="text-[9px] text-[#FACC15] uppercase font-black tracking-tighter animate-pulse text-right w-16">0%</span>
-                        <button type="button" class="text-white/20 hover:text-red-500 transition-colors" id="del-${fileId}">
+                        <button type="button" class="p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm" id="del-${fileId}" title="Remove">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
                     </div>

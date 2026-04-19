@@ -91,11 +91,11 @@ class CaseFileController extends Controller
             'name' => ['required', 'string', 'max:255'],
         ]);
 
-        // Authorization: Admin can rename any. User can only rename THE FILE THEY UPLOADED.
-        if (auth()->user()->role !== 'admin' && $report->updated_by !== auth()->id()) {
+        // Authorization: Admin can rename any. User can only rename files in their OWN cases.
+        if (auth()->user()->role !== 'admin' && $report->user_id !== auth()->id()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized action. You can only rename files you uploaded.'
+                'message' => 'Unauthorized action. You can only rename files in your own cases.'
             ], 403);
         }
 
@@ -131,9 +131,9 @@ class CaseFileController extends Controller
      */
     public function destroy(Report $report)
     {
-        // Authorization: Admin can delete any. User can only delete THEIR OWN uploads.
-        if (auth()->user()->role !== 'admin' && $report->updated_by !== auth()->id()) {
-            abort(403, 'Unauthorized action. You can only remove files you uploaded.');
+        // Authorization: Admin can delete any. User can only delete files from THEIR OWN cases.
+        if (auth()->user()->role !== 'admin' && $report->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized action. You can only remove files from your own cases.');
         }
 
         $batch_id = $report->batch_id;

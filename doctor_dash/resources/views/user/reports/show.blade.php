@@ -281,7 +281,7 @@
                                                 </a>
                                             </div>
                                             <div class="flex items-center gap-2">
-                                                @if($report->updated_by === auth()->id())
+                                                @if(auth()->user()->role === 'admin' || $report->user_id === auth()->id())
                                                 <button type="button" 
                                                     class="rename-file-btn flex-1 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[11px] font-bold text-[#FACC15] hover:bg-[#FACC15]/10 transition-colors flex items-center justify-center gap-1.5"
                                                     data-report-id="{{ $report->id }}"
@@ -295,11 +295,11 @@
                                                     data-report-id="{{ $report->id }}">
                                                     Link
                                                 </button>
-                                                @if(auth()->user()->role === 'admin' || $report->updated_by === auth()->id())
+                                                @if(auth()->user()->role === 'admin' || $report->user_id === auth()->id())
                                                     <form action="{{ route('case.files.destroy', $report) }}" method="POST" onsubmit="return confirm('Are you sure you want to remove this file?')" class="m-0">
                                                         @csrf
                                                         @method('DELETE')
-                                                        <button type="submit" class="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all">
+                                                        <button type="submit" class="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all group/trash" title="Remove File">
                                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                             </svg>
@@ -906,7 +906,7 @@
                                     <p class="text-[11px] font-bold text-white truncate">${file.name}</p>
                                     <p class="text-[9px] text-slate-500 font-bold tracking-widest uppercase">${(file.size / (1024 * 1024)).toFixed(2)} MB</p>
                                 </div>
-                                <button type="button" class="remove-pending-file p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover/item:opacity-100" data-index="${index}">
+                                <button type="button" class="remove-pending-file p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all" data-index="${index}">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
                                 </button>
                             </div>
